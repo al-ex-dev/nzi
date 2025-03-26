@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export default {
     name: 'nks',
     description: 'Verifica tarjeta de crédito',
