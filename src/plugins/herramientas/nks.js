@@ -27,8 +27,16 @@ export default {
         if (mes.length === 1) mes = "0" + mes;
         if (bannedBin(cc.substring(0, 6))) return sock.sendMessage(m.from, { text: "*La bin proporciona se encuentra baneada.*" });
 
-        const binData = await fetch(`https://lookup.binlist.net/${cc.substring(0, 6)}`).then(res => res.json());
-        if (!binData || binData.error) return sock.sendMessage(m.from, { text: "*No se encontro informacion de la bin.*" })
+        const binData = await fetch(`https://lookup.binlist.net/${cc.substring(0, 6)}`)
+            .then(async (res) => {
+                if (!res.ok) throw new Error("Error al obtener datos de la BIN");
+                return res.json();
+            })
+            .catch(() => null);
+
+        if (!binData || binData.error) {
+            return sock.sendMessage(m.from, { text: "*No se encontró información de la BIN.*" });
+        }
 
         const bank = binData.bank?.name || "Desconocido"
         const country = binData.country?.name || "Desconocido"
@@ -36,7 +44,18 @@ export default {
         const brand = binData.brand || "Desconocido";
         const scheme = binData.scheme || "Desconocido";
         const emoji = binData.country?.emoji || "";
-        const fakeUser = await fetch("https://randomuser.me/api/?nat=us").then(res => res.json());
+
+        const fakeUser = await fetch("https://randomuser.me/api/?nat=us")
+            .then(async (res) => {
+                if (!res.ok) throw new Error("Error al obtener datos del usuario");
+                return res.json();
+            })
+            .catch(() => null);
+
+        if (!fakeUser || !fakeUser.results || fakeUser.results.length === 0) {
+            return sock.sendMessage(m.from, { text: "*No se pudo generar un usuario falso.*" });
+        }
+
         const user = fakeUser.results[0];
         const providers = ["gmail.com", "hotmail.com", "yahoo.com", "outlook.com"];
         const provider = providers[Math.floor(Math.random() * providers.length)];
