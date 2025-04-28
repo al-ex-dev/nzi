@@ -37,50 +37,46 @@ const start = async () => {
     })
 
     sock.ev.on("group-participants.update", async ({ id, author, participants, action }) => {
-        if (!action || !db.data.chats[id]?.welcome || author?.endsWith("@lid")) return;
+        if (!action || !db.data.chats[id]?.notify[action]?.status || author?.endsWith("@lid")) return
 
-        const { subject, desc } = await sock.groupMetadata(id);
-        const msg = {
-            add: () => author ? `Fuiste añadido por @${author.split`@`[0]}` : `Te uniste mediante enlace`,
+        const { subject, desc } = await sock.groupMetadata(id)
+
+        const messages = {
+            add: p => author ? `Fuiste añadido por @${author.split`@`[0]}` : `Te uniste mediante enlace`,
             remove: p => author === p ? `Salió del grupo` : `Eliminado por @${author.split`@`[0]}`,
             promote: () => `Promovido por @${author.split`@`[0]}`,
             demote: () => `Degradado por @${author.split`@`[0]}`,
             modify: () => `Configuración modificada`
-        }[action];
+        }
 
         for (const p of participants) {
             const group = db.data.chats[id]
             const fake = p.split('@')[0]
-            if (group.antifake && action === 'add') {
-                if (group.fake.some(i => fake.startsWith(i))) {
-                    await sock.sendMessage(id, { text: 'Tu numero se encuentra en la lista negra, seras eliminado automaticamente.' })
-                    await sock.groupParticipantsUpdate(id, [p], 'remove')
-                    continue
-                }
+            if (group.antifake && action === 'add' && group.fake.some(i => fake.startsWith(i))) {
+                await sock.sendMessage(id, { text: 'Tu número se encuentra en la lista negra, serás eliminado automáticamente.' })
+                await sock.groupParticipantsUpdate(id, [p], 'remove')
+
+                continue
             }
-            const text = db.data.chats[id].messages[action]
-                .replace(/(@group|@action|@user|@time|@desc)/g, (m) => ({
+            await sock.sendMessage(id, {
+                image: { url: images },
+                caption: db.data.chats[id].notify[action].message?.replace(/(@group|@action|@user|@time|@desc)/g, match => ({
                     '@group': `@${id}`,
-                    '@action': msg?.(p),
+                    '@action': messages[action]?.(p),
                     '@user': `@${p.split`@`[0]}`,
                     '@time': new Date().toLocaleString(),
                     '@desc': desc
-                }[m]))
-
-            const image = await sock.profilePictureUrl(p, 'image')
-                .catch(() => sock.profilePictureUrl(id, 'image'))
-                .catch(() => _config.bot.hd);
-
-            msg && sock.sendMessage(id, {
-                image: { url: image },
-                caption: text,
+                }[match])),
+                footer: _config.bot.credits,
+                interactiveButtons: [{ name: "cta_url", buttonParamsJson: JSON.stringify({ display_text: "site", url: "https://ktxoo.xyz" }) }],
                 contextInfo: {
-                    mentionedJid: [p, author],
+                    remoteJid: id,
+                    mentionedJid: [p, author].filter(Boolean),
                     groupMentions: [{ groupJid: id, groupSubject: subject }]
                 }
             })
         }
-    });
+    })
 
     sock.ev.on("groups.update", async updates => {
         for (const { id, author, ...props } of updates) {
