@@ -58,6 +58,7 @@ const start = async () => {
 
                 continue
             }
+            let images = db.data.chats[id].notify[action].image
             await sock.sendMessage(id, {
                 image: { url: images },
                 caption: db.data.chats[id].notify[action].message?.replace(/(@group|@action|@user|@time|@desc)/g, match => ({
