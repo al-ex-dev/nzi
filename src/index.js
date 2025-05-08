@@ -58,9 +58,9 @@ const start = async () => {
 
                 continue
             }
-            let images = db.data.chats[id].notify[action].image
+            let images = db.data.chats[id].image
             await sock.sendMessage(id, {
-                image: images,
+                image: images || Buffer.from(await (await fetch(_config.bot.img)).arrayBuffer()),
                 caption: db.data.chats[id].notify[action].message?.replace(/(@group|@action|@user|@time|@desc)/g, match => ({
                     '@group': `@${id}`,
                     '@action': messages[action]?.(p),

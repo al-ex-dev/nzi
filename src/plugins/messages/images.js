@@ -4,8 +4,8 @@ export default {
     comand: ["image"],
     exec: async (m, { sock, db, v}) => {
         if (!v.isMedia) m.reply("Requiere imagen para enviar a la base de datos.")
-        const download = v.download()
-        db.data.chats[m.from].image = download
+        const download = await v.download()
+        db.data.chats[m.from].image = Buffer.from(download)
         m.reply("Se ha procesado su imagen con exito.")
     },
     isOwner: true
